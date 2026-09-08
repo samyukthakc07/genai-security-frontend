@@ -1,0 +1,109 @@
+import { useNavigate } from 'react-router-dom'
+import {
+  Bot, Cpu, MessageSquare, Workflow, Shield, Zap,
+  Globe, Video, Music, Code, TrendingUp, ArrowUpRight,
+} from 'lucide-react'
+import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from '@/components/ui'
+import { cn } from '@/utils/helpers'
+
+const AGENT_TEMPLATES = [
+  { id: 'chatbot', name: 'Customer Support Bot', icon: <MessageSquare className="h-5 w-5" />, color: 'blue', description: 'Multi-language customer support with knowledge base', model: 'GPT-4 Turbo', status: 'active' },
+  { id: 'code', name: 'Code Assistant', icon: <Code className="h-5 w-5" />, color: 'green', description: 'AI-powered code generation and review assistant', model: 'Claude 3 Opus', status: 'active' },
+  { id: 'analyst', name: 'Data Analyst Agent', icon: <TrendingUp className="h-5 w-5" />, color: 'purple', description: 'Automated data analysis and visualization', model: 'GPT-4 Turbo', status: 'active' },
+  { id: 'workflow', name: 'Workflow Automator', icon: <Workflow className="h-5 w-5" />, color: 'orange', description: 'Automate complex multi-step business workflows', model: 'Llama 3 70B', status: 'idle' },
+  { id: 'research', name: 'Research Assistant', icon: <Globe className="h-5 w-5" />, color: 'teal', description: 'Web research and content summarization agent', model: 'Mistral Large', status: 'idle' },
+  { id: 'media', name: 'Media Generation Agent', icon: <Video className="h-5 w-5" />, color: 'pink', description: 'Generate images, videos, and audio content', model: 'DALL-E 3 + GPT-4', status: 'inactive' },
+]
+
+const colorMap: Record<string, { bg: string; text: string; light: string }> = {
+  blue: { bg: 'bg-blue-600', text: 'text-blue-600', light: 'bg-blue-50' },
+  green: { bg: 'bg-green-600', text: 'text-green-600', light: 'bg-green-50' },
+  purple: { bg: 'bg-purple-600', text: 'text-purple-600', light: 'bg-purple-50' },
+  orange: { bg: 'bg-orange-600', text: 'text-orange-600', light: 'bg-orange-50' },
+  teal: { bg: 'bg-teal-600', text: 'text-teal-600', light: 'bg-teal-50' },
+  pink: { bg: 'bg-pink-600', text: 'text-pink-600', light: 'bg-pink-50' },
+}
+
+export function AgentCenterPage() {
+  const navigate = useNavigate()
+  const activeCount = AGENT_TEMPLATES.filter((a) => a.status === 'active').length
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+              <Bot className="h-4 w-4 text-indigo-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900">AI Agent Center</h1>
+          </div>
+          <p className="text-sm text-gray-500 mt-1 ml-10">
+            Deploy, configure, and monitor your AI agents across the organization
+          </p>
+        </div>
+        <Button>
+          <Bot className="h-4 w-4" />
+          Create Agent
+        </Button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { icon: <Bot className="h-4 w-4" />, label: 'Total Agents', value: '12', color: 'blue' },
+          { icon: <Zap className="h-4 w-4" />, label: 'Active', value: '3', color: 'green' },
+          { icon: <Cpu className="h-4 w-4" />, label: 'Models Used', value: '5', color: 'purple' },
+          { icon: <Bot className="h-4 w-4" />, label: 'Configurable', value: '9', color: 'cyan' },
+        ].map((stat) => (
+          <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+            <div className={cn(
+              'h-9 w-9 rounded-lg flex items-center justify-center shrink-0',
+              stat.color === 'blue' ? 'bg-blue-50 text-blue-600' :
+              stat.color === 'green' ? 'bg-green-50 text-green-600' :
+              stat.color === 'purple' ? 'bg-purple-50 text-purple-600' :
+              'bg-cyan-50 text-cyan-600'
+            )}>{stat.icon}</div>
+            <div>
+              <p className="text-lg font-bold text-gray-900">{stat.value}</p>
+              <p className="text-xs text-gray-500">{stat.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Agent Templates */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {AGENT_TEMPLATES.map((agent) => {
+          const c = colorMap[agent.color]
+          return (
+            <Card key={agent.id} hover className="transition-all hover:shadow-md cursor-pointer" onClick={() => navigate(`/agent-center/${agent.id}`)}>
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <div className={cn('h-10 w-10 rounded-lg flex items-center justify-center', c.light, c.text)}>
+                    {agent.icon}
+                  </div>
+                  <Badge variant={
+                    agent.status === 'active' ? 'success' :
+                    agent.status === 'idle' ? 'warning' : 'default'
+                  }>
+                    {agent.status}
+                  </Badge>
+                </div>
+
+                <h3 className="text-sm font-semibold text-gray-900">{agent.name}</h3>
+                <p className="text-xs text-gray-500 mt-1">{agent.description}</p>
+
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                  <span className="text-xs text-gray-400">{agent.model}</span>
+                  <ArrowUpRight className="h-4 w-4 text-gray-300" />
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+    </div>
+  )
+}

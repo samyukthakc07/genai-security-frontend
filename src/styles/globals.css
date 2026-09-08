@@ -1,0 +1,214 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* GenAI Security Platform - Brand Theme Colors */
+:root {
+  --color-primary: #6366f1;
+  --color-primary-dark: #4f46e5;
+  --color-primary-light: #818cf8;
+  --color-secondary: #0ea5e9;
+  --color-accent: #06b6d4;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+  --color-success: #22c55e;
+  --color-info: #3b82f6;
+
+  /* Light theme: use soft slate-white surfaces for premium contrast */
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f8fafc;
+  --color-border: #e2e8f0;
+  --color-text: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748b;
+
+  /* Tailwind-like gray tokens for light theme */
+  --color-white: #ffffff;
+  --color-gray-50: #f8fafc;
+  --color-gray-100: #f1f5f9;
+  --color-gray-200: #e2e8f0;
+  --color-gray-300: #cbd5e1;
+  --color-gray-400: #94a3b8;
+  --color-gray-500: #64748b;
+  --color-gray-600: #475569;
+  --color-gray-700: #334155;
+  --color-gray-800: #1e293b;
+  --color-gray-900: #0f172a;
+  --color-gray-950: #020617;
+
+  --sidebar-width: 260px;
+  --header-height: 64px;
+}
+
+/* ─── Dark Mode ────────────────────────────────────────────────────────── */
+/* Custom variables for dark mode that automatically apply to Tailwind v4 variables */
+.dark {
+  /* Dark theme: use premium navy-slate surfaces */
+  --color-surface: #131b2e;
+  --color-surface-secondary: #0b0f19;
+  --color-border: #1f2d47;
+  --color-text: #f8fafc;
+  --color-text-secondary: #cbd5e1;
+
+  /* Tailwind v4 gray-scale overrides — maps standard classes automatically */
+  --color-white: #131b2e;            /* Card/surface backgrounds */
+  --color-gray-50: #0b0f19;           /* Page background */
+  --color-gray-100: #1a243d;          /* Hover state backgrounds */
+  --color-gray-200: #1f2d47;          /* Borders, dividers */
+  --color-gray-300: #2d3e5e;          /* Input borders, disabled states */
+  --color-gray-400: #475a80;          /* Muted icons, placeholder text */
+  --color-gray-500: #94a3b8;          /* Secondary text, labels */
+  --color-gray-600: #cbd5e1;          /* Body text */
+  --color-gray-700: #cbd5e1;          /* Strong body text */
+  --color-gray-800: #f8fafc;          /* Near-white text */
+  --color-gray-900: #f8fafc;          /* Heading text */
+  --color-gray-950: #ffffff;          /* Brightest text */
+
+  /* Accent colors — adapted for dark mode */
+  --color-indigo-50: #1a243d;
+  --color-indigo-100: #252d56;
+  --color-indigo-200: #2f3a6e;
+  --color-indigo-500: #818cf8;
+  --color-indigo-600: #a5b4fc;
+  --color-indigo-700: #c7d2fe;
+  --color-indigo-800: #dce2fd;
+
+  --color-green-50: #0c2b1a;
+  --color-green-100: #0e3d24;
+  --color-green-200: #0f4d2d;
+  --color-green-500: #34d399;
+  --color-green-600: #4ade80;
+  --color-green-700: #6ee7b7;
+  --color-green-800: #86efac;
+
+  --color-red-50: #2a0c0c;
+  --color-red-100: #3d1111;
+  --color-red-200: #4f1616;
+  --color-red-500: #f87171;
+  --color-red-600: #fca5a5;
+  --color-red-700: #fca5a5;
+  --color-red-800: #fecaca;
+
+  --color-amber-50: #2a1f06;
+  --color-amber-100: #3d2d0a;
+  --color-amber-200: #4f3a0e;
+  --color-amber-500: #fbbf24;
+  --color-amber-600: #fcd34d;
+  --color-amber-700: #fde68a;
+  --color-amber-800: #fef08a;
+
+  --color-blue-50: #0c1d3a;
+  --color-blue-100: #112a50;
+  --color-blue-200: #163566;
+  --color-blue-500: #60a5fa;
+  --color-blue-600: #7bb8fb;
+  --color-blue-700: #93c5fd;
+  --color-blue-800: #bfdbfe;
+
+  --color-yellow-50: #261d05;
+  --color-yellow-100: #3a2e08;
+  --color-yellow-200: #4d3c0c;
+  --color-yellow-500: #facc15;
+  --color-yellow-600: #fde047;
+  --color-yellow-700: #fef08a;
+  --color-yellow-800: #fef9c3;
+
+  --color-orange-50: #281707;
+  --color-orange-100: #3b210a;
+  --color-orange-200: #4d2a0d;
+  --color-orange-500: #fb923c;
+  --color-orange-600: #fdba74;
+  --color-orange-700: #fed7aa;
+  --color-orange-800: #fedcba;
+
+  --color-teal-50: #0f2f2a;
+  --color-teal-100: #14403a;
+  --color-teal-200: #185048;
+  --color-teal-500: #2dd4bf;
+  --color-teal-600: #5eead4;
+  --color-teal-700: #99f6e4;
+
+  --color-cyan-50: #0e2d38;
+  --color-cyan-100: #133d4b;
+  --color-cyan-200: #184d5e;
+  --color-cyan-500: #22d3ee;
+  --color-cyan-600: #67e8f9;
+
+  --color-purple-50: #1c0f3a;
+  --color-purple-100: #281456;
+  --color-purple-200: #341a6e;
+  --color-purple-500: #a855f7;
+  --color-purple-600: #c084fc;
+
+  --color-pink-100: #3a1440;
+  --color-rose-100: #3a1420;
+
+  /* Softer shadows in dark mode */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+
+  /* Ring (focus indicators) */
+  --color-ring: #818cf8;
+  --tw-ring-offset-color: #0b0f19;
+}
+
+/* ─── Base Styles ──────────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  color: var(--color-text);
+  background-color: var(--color-surface-secondary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 200ms ease, border-color 200ms ease;
+}
+
+html.dark body {
+  background-color: var(--color-surface-secondary);
+}
+
+/* Global Form Elements Theme Fixes */
+input, select, textarea {
+  background-color: var(--color-white);
+  color: var(--color-text);
+  border-color: var(--color-gray-300);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--color-gray-400);
+}
+
+/* ─── Scrollbar Styling ────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-gray-300);
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: var(--color-gray-200);
+}
+
+/* ─── Utility Classes ──────────────────────────────────────────────────── */
+.transition-fast {
+  transition: all 150ms ease;
+}
+
+.transition-normal {
+  transition: all 250ms ease;
+}
