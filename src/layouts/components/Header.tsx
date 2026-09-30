@@ -121,7 +121,9 @@ function NotificationPanel({ onClose }: { onClose: () => void }) {
 }
 
 export function Header({ onMenuToggle }: HeaderProps) {
-  const { user, logout } = useAuthStore()
+  // Mock demo user
+  const user = { first_name: 'Demo', last_name: 'Admin', email: 'admin@genai-security.com' }
+  const logout = () => { console.log('Logout disabled in demo mode') }
   const { theme, toggleTheme } = useTheme()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
