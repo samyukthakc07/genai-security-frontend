@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Shield, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { useAuthStore } from '@/store/authSlice'

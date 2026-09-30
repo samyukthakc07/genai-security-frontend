@@ -59,7 +59,7 @@ const organizationService = {
 
   async getMembers(id: string): Promise<Membership[]> {
     const { data } = await apiClient.get(`/organizations/${id}/members/`)
-    return data
+    return data.results ?? data
   },
 
   async inviteMember(orgId: string, email: string, role: string): Promise<void> {

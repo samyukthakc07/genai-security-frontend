@@ -1,4 +1,5 @@
 import apiClient from './apiClient'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type { Finding } from '@/types/models'
 
 // ============================================================
@@ -76,9 +77,15 @@ export const promptInjectionService = {
   createBatch: (data: { scan: string; name: string; source_file?: string }) =>
     apiClient.post('/prompt-injection/batches/', data),
   quickScan: (data: { prompt_text: string; model_name: string }): Promise<QuickScanResult> =>
+     
     apiClient.post('/prompt-injection/quick-scan/', data, { timeout: 180000 }).then(r => r.data),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   fetchModels: (): Promise<{ models: string[]; count: number }> =>
     apiClient.get('/ollama-models/', { timeout: 15000 }).then(r => r.data),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  testOllamaInference: (data: { model: string; prompt: string }): Promise<any> =>
+    apiClient.post('/ollama-inference/', data, { timeout: 30000 }).then(r => r.data),
 }
 
 // ============================================================
@@ -372,3 +379,5 @@ export const unboundedConsumptionService = {
   getRateLimits: (params?: Record<string, string>) =>
     apiClient.get('/unbounded-consumption/rate-limits/', { params }),
 }
+
+

@@ -6,6 +6,8 @@ export interface DashboardData {
   high_risks: number
   owasp_coverage: number
   compliance_score: number
+  total_assets: number
+  active_scans: number
   recent_scans: Array<{
     id: string
     name: string
@@ -20,12 +22,6 @@ export interface DashboardData {
     severity: string
     created_at: string
   }>
-  risk_by_module: Array<{
-    module: string
-    count: number
-    severity: string
-  }>
-  module_scores: Record<string, number>
 }
 
 export interface ModuleStatsResponse {

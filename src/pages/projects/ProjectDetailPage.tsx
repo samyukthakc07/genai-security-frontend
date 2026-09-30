@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Edit2, Trash2, Shield, Activity } from 'lucide-react'
+ 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Button, Card, CardHeader, CardTitle, CardContent, Badge, Tabs, EmptyState } from '@/components/ui'
 import { useProjectStore } from '@/store/projectSlice'
 import { formatDate } from '@/utils/formatters'

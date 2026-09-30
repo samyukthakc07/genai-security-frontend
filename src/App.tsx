@@ -16,6 +16,7 @@ import { AiAssetsPage } from '@/pages/ai_assets/AiAssetsPage'
 import { AssetDetailPage } from '@/pages/ai_assets/AssetDetailPage'
 import { ScansPage } from '@/pages/scans/ScansPage'
 import { ScanDetailPage } from '@/pages/scans/ScanDetailPage'
+import { NewScanPage } from '@/pages/scans/NewScanPage'
 import { FindingsPage } from '@/pages/findings/FindingsPage'
 import { FindingsDetailPage } from '@/pages/findings/FindingsDetailPage'
 import { CompliancePage } from '@/pages/compliance/CompliancePage'
@@ -92,7 +93,15 @@ function App() {
             <Route path="/ai-assets" element={<AiAssetsPage />} />
             <Route path="/ai-assets/:type/:id" element={<AssetDetailPage />} />
             <Route path="/ai-assets/*" element={<AiAssetsPage />} />
+            
+            {/* Alias for /assets routing to fix 404s */}
+            <Route path="/assets" element={<Navigate to="/ai-assets" replace />} />
+            <Route path="/assets/:type/:id" element={<AssetDetailPage />} />
+            <Route path="/assets/*" element={<Navigate to="/ai-assets" replace />} />
+
             <Route path="/scans" element={<ScansPage />} />
+            <Route path="/scans/quick" element={<NewScanPage />} />
+            <Route path="/scans/new" element={<NewScanPage />} />
             <Route path="/scans/:id" element={<ScanDetailPage />} />
             <Route path="/scans/*" element={<ScansPage />} />
             <Route path="/findings/:id" element={<FindingsDetailPage />} />

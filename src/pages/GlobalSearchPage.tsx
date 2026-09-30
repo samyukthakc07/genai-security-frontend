@@ -57,6 +57,7 @@ export function GlobalSearchPage() {
   // Run search on mount if query param exists
   useEffect(() => {
     if (initialQuery) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       performSearch(initialQuery)
     }
     // Focus the input

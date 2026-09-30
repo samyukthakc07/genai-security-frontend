@@ -28,7 +28,7 @@ export function OrganizationListPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {organizations.map((org: any) => (
+        {organizations.map((org: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
           <Card key={org.id} hover onClick={() => navigate(`/organizations/${org.id}`)}>
             <CardHeader>
               <div className="flex items-center gap-3">

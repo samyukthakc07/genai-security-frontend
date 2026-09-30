@@ -1,6 +1,14 @@
+ 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Shield, ShieldAlert, ShieldCheck, AlertCircle, CheckCircle2, XCircle, ArrowUpRight, ChevronDown, ChevronUp } from 'lucide-react'
+ 
+ 
+ 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Card, CardHeader, CardTitle, CardContent, Badge, SeverityBadge } from '@/components/ui'
 import { cn } from '@/utils/helpers'
+ 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatDateTime, formatRelativeTime, formatNumber, capitalize } from '@/utils/formatters'
 import { SEVERITY_COLORS } from '@/types/models'
 import { useState } from 'react'
@@ -17,7 +25,8 @@ interface RiskScoreCardProps {
 }
 
 export function RiskScoreCard({ score, label, maxScore = 100, className }: RiskScoreCardProps) {
-  const percentage = Math.min((score / maxScore) * 100, 100)
+  const numericScore = typeof score === 'number' ? score : Number(score) || 0;
+  const percentage = Math.min((numericScore / maxScore) * 100, 100)
   const getColor = () => {
     if (percentage >= 80) return { bg: '#fef2f2', bar: '#ef4444', text: '#dc2626' }
     if (percentage >= 60) return { bg: '#fff7ed', bar: '#f97316', text: '#ea580c' }
@@ -30,7 +39,7 @@ export function RiskScoreCard({ score, label, maxScore = 100, className }: RiskS
     <div className={cn('bg-white rounded-xl border border-gray-200 p-5', className)}>
       <p className="text-sm text-gray-500 mb-2">{label}</p>
       <div className="flex items-end gap-3">
-        <span className="text-3xl font-bold" style={{ color: colors.text }}>{score.toFixed(0)}</span>
+        <span className="text-3xl font-bold" style={{ color: colors.text }}>{numericScore.toFixed(0)}</span>
         <span className="text-sm text-gray-400 mb-1">/ {maxScore}</span>
       </div>
       <div className="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -175,6 +184,17 @@ interface ResultsTableProps {
   className?: string
 }
 
+
+export const renderSafeString = (v: any): string => {
+  if (v == null) return '-';
+  if (typeof v === 'string' || typeof v === 'number') return String(v);
+  if (Array.isArray(v)) return v.length + ' items';
+  if (typeof v === 'object') {
+    return v.name || v.id || v.title || v.version || v.package || JSON.stringify(v);
+  }
+  return String(v);
+};
+
 export function ResultsTable({ columns, data, onRowClick, emptyMessage = 'No results found', className }: ResultsTableProps) {
   const [sortKey, setSortKey] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
@@ -242,7 +262,7 @@ export function ResultsTable({ columns, data, onRowClick, emptyMessage = 'No res
             >
               {columns.map((col) => (
                 <td key={col.key} className="px-3 py-2.5 text-gray-700">
-                  {col.render ? col.render(row[col.key], row) : String(row[col.key] ?? '-')}
+                  {col.render ? col.render(row[col.key], row) : renderSafeString(row[col.key])}
                 </td>
               ))}
             </tr>

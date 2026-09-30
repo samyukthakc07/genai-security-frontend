@@ -44,16 +44,18 @@ export function DataTable<T>({
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
 
+  const safeData = Array.isArray(data) ? data : []
+
   const filtered = useMemo(() => {
-    if (!search) return data
+    if (!search) return safeData
     const query = search.toLowerCase()
-    return data.filter((item) =>
+    return safeData.filter((item) =>
       columns.some((col) => {
         const val = (item as Record<string, unknown>)[col.key]
         return String(val).toLowerCase().includes(query)
       })
     )
-  }, [data, search, columns])
+  }, [safeData, search, columns])
 
   const sorted = useMemo(() => {
     if (!sortKey) return filtered

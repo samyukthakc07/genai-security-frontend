@@ -46,7 +46,7 @@ export function ProjectListPage() {
 
       <div className="flex gap-2 flex-wrap">
         <button onClick={() => setSelectedOrg('')} className={cn('px-4 py-2 rounded-lg text-sm font-medium transition-colors', !selectedOrg ? 'bg-indigo-600 text-white dark:text-[#ffffff]' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}>All</button>
-        {displayOrgs.map((org: any) => (
+        {displayOrgs.map((org: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
           <button key={org.id} onClick={() => setSelectedOrg(org.id)} className={cn('px-4 py-2 rounded-lg text-sm font-medium transition-colors', selectedOrg === org.id ? 'bg-indigo-600 text-white dark:text-[#ffffff]' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}>{org.name}</button>
         ))}
       </div>
@@ -54,8 +54,9 @@ export function ProjectListPage() {
       {displayProjects.length === 0 ? (
         <Card><EmptyState icon={<FolderKanban className="h-12 w-12" />} title="No projects yet" description="Create your first AI security assessment project" action={selectedOrg ? { label: 'Create Project', onClick: () => setShowCreate(true) } : undefined} /></Card>
       ) : (
+         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {displayProjects.map((project: any) => (
+          {displayProjects.map((project: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
             <Card key={project.id} hover onClick={() => navigate(`/projects/${project.id}`)}>
               <CardHeader>
                 <div className="flex items-center gap-3">

@@ -38,6 +38,8 @@ export interface FindingDetail {
   risk_score: number
   cvss_score: number | null
   owasp_category: string
+   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   evidence: Record<string, any>
   remediation: string
   references: string[]
@@ -53,7 +55,9 @@ export interface FindingDetail {
   notes: FindingNote[]
 }
 
+ 
 const findingsService = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async list(params?: Record<string, any>): Promise<FindingListItem[]> {
     const { data } = await apiClient.get('/findings/', { params })
     return data.results || data

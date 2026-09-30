@@ -5,7 +5,9 @@ interface State {
   error?: Error
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export class ErrorBoundary extends React.Component<React.PropsWithChildren<{}>, State> {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   constructor(props: React.PropsWithChildren<{}>) {
     super(props)
     this.state = { hasError: false }
@@ -16,7 +18,7 @@ export class ErrorBoundary extends React.Component<React.PropsWithChildren<{}>, 
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    // eslint-disable-next-line no-console
+     
     console.error('Uncaught error:', error, info)
   }
 

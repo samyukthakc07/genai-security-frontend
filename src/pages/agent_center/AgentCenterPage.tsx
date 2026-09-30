@@ -1,21 +1,23 @@
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Bot, Cpu, MessageSquare, Workflow, Shield, Zap,
+   
+   
+   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Globe, Video, Music, Code, TrendingUp, ArrowUpRight,
 } from 'lucide-react'
+ 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from '@/components/ui'
 import { cn } from '@/utils/helpers'
+import assetService, { type AIAgentData } from '@/services/assetService'
 
-const AGENT_TEMPLATES = [
-  { id: 'chatbot', name: 'Customer Support Bot', icon: <MessageSquare className="h-5 w-5" />, color: 'blue', description: 'Multi-language customer support with knowledge base', model: 'GPT-4 Turbo', status: 'active' },
-  { id: 'code', name: 'Code Assistant', icon: <Code className="h-5 w-5" />, color: 'green', description: 'AI-powered code generation and review assistant', model: 'Claude 3 Opus', status: 'active' },
-  { id: 'analyst', name: 'Data Analyst Agent', icon: <TrendingUp className="h-5 w-5" />, color: 'purple', description: 'Automated data analysis and visualization', model: 'GPT-4 Turbo', status: 'active' },
-  { id: 'workflow', name: 'Workflow Automator', icon: <Workflow className="h-5 w-5" />, color: 'orange', description: 'Automate complex multi-step business workflows', model: 'Llama 3 70B', status: 'idle' },
-  { id: 'research', name: 'Research Assistant', icon: <Globe className="h-5 w-5" />, color: 'teal', description: 'Web research and content summarization agent', model: 'Mistral Large', status: 'idle' },
-  { id: 'media', name: 'Media Generation Agent', icon: <Video className="h-5 w-5" />, color: 'pink', description: 'Generate images, videos, and audio content', model: 'DALL-E 3 + GPT-4', status: 'inactive' },
-]
+const colorOptions = ['blue', 'green', 'purple', 'orange', 'teal', 'pink'] as const
 
-const colorMap: Record<string, { bg: string; text: string; light: string }> = {
+const colorMap = {
   blue: { bg: 'bg-blue-600', text: 'text-blue-600', light: 'bg-blue-50' },
   green: { bg: 'bg-green-600', text: 'text-green-600', light: 'bg-green-50' },
   purple: { bg: 'bg-purple-600', text: 'text-purple-600', light: 'bg-purple-50' },
@@ -24,9 +26,31 @@ const colorMap: Record<string, { bg: string; text: string; light: string }> = {
   pink: { bg: 'bg-pink-600', text: 'text-pink-600', light: 'bg-pink-50' },
 }
 
+function getIconForAgentType(type: string) {
+  if (type === 'autonomous') return <Workflow className="h-5 w-5" />
+  if (type === 'assistant') return <MessageSquare className="h-5 w-5" />
+  if (type === 'research') return <Globe className="h-5 w-5" />
+  return <Bot className="h-5 w-5" />
+}
+
 export function AgentCenterPage() {
   const navigate = useNavigate()
-  const activeCount = AGENT_TEMPLATES.filter((a) => a.status === 'active').length
+  const [agents, setAgents] = useState<AIAgentData[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    assetService.listAgents()
+      .then(setAgents)
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return <div className="p-8 text-center text-gray-500">Loading agents...</div>
+  }
+
+  const activeCount = agents.filter((a) => a.status === 'active' || a.status === 'running').length
+  const uniqueModels = new Set(agents.map(a => typeof a.model === 'string' ? a.model : a.model?.name).filter(Boolean)).size
 
   return (
     <div className="space-y-6">
@@ -52,10 +76,10 @@ export function AgentCenterPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { icon: <Bot className="h-4 w-4" />, label: 'Total Agents', value: '12', color: 'blue' },
-          { icon: <Zap className="h-4 w-4" />, label: 'Active', value: '3', color: 'green' },
-          { icon: <Cpu className="h-4 w-4" />, label: 'Models Used', value: '5', color: 'purple' },
-          { icon: <Bot className="h-4 w-4" />, label: 'Configurable', value: '9', color: 'cyan' },
+          { icon: <Bot className="h-4 w-4" />, label: 'Total Agents', value: agents.length.toString(), color: 'blue' },
+          { icon: <Zap className="h-4 w-4" />, label: 'Active', value: activeCount.toString(), color: 'green' },
+          { icon: <Cpu className="h-4 w-4" />, label: 'Models Used', value: uniqueModels.toString(), color: 'purple' },
+          { icon: <Bot className="h-4 w-4" />, label: 'Configurable', value: agents.length.toString(), color: 'cyan' },
         ].map((stat) => (
           <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
             <div className={cn(
@@ -75,28 +99,31 @@ export function AgentCenterPage() {
 
       {/* Agent Templates */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {AGENT_TEMPLATES.map((agent) => {
-          const c = colorMap[agent.color]
+        {agents.map((agent, index) => {
+          const colorKey = colorOptions[index % colorOptions.length]
+          const c = colorMap[colorKey]
+          const modelName = typeof agent.model === 'string' ? agent.model : (agent.model?.name || 'Unknown Model')
+          
           return (
-            <Card key={agent.id} hover className="transition-all hover:shadow-md cursor-pointer" onClick={() => navigate(`/agent-center/${agent.id}`)}>
+            <Card key={agent.id} hover className="transition-all hover:shadow-md cursor-pointer" onClick={() => navigate(`/assets/agents/${agent.id}`)}>
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className={cn('h-10 w-10 rounded-lg flex items-center justify-center', c.light, c.text)}>
-                    {agent.icon}
+                    {getIconForAgentType(agent.agent_type)}
                   </div>
                   <Badge variant={
                     agent.status === 'active' ? 'success' :
                     agent.status === 'idle' ? 'warning' : 'default'
                   }>
-                    {agent.status}
+                    {agent.status_display || agent.status || 'Active'}
                   </Badge>
                 </div>
 
                 <h3 className="text-sm font-semibold text-gray-900">{agent.name}</h3>
-                <p className="text-xs text-gray-500 mt-1">{agent.description}</p>
+                <p className="text-xs text-gray-500 mt-1">{agent.description || agent.agent_type_display || 'AI Agent'}</p>
 
                 <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
-                  <span className="text-xs text-gray-400">{agent.model}</span>
+                  <span className="text-xs text-gray-400">{modelName}</span>
                   <ArrowUpRight className="h-4 w-4 text-gray-300" />
                 </div>
               </CardContent>

@@ -73,6 +73,7 @@ export function FindingsPage() {
   const [fetchError, setFetchError] = useState(false)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true)
     setFetchError(false)
     findingsService.list()

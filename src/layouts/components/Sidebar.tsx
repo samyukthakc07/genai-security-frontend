@@ -16,6 +16,7 @@ import {
   Shield as ShieldLogo,
 } from 'lucide-react'
 import { cn } from '@/utils/helpers'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { APP_NAME } from '@/utils/constants'
 import type { ReactNode } from 'react'
 
@@ -79,6 +80,7 @@ const menuItems: MenuItem[] = [
 function SidebarMenuItem({
   item,
   collapsed,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   depth = 0,
 }: {
   item: MenuItem

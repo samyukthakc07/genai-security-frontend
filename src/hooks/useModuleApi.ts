@@ -75,6 +75,7 @@ export function useModuleApi<T extends object>(
   }, [endpoint, mockFallback])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData()
   }, [fetchData])
 

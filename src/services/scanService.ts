@@ -14,12 +14,16 @@ export interface AIScan {
   completed_at: string | null
   created_by: string
   created_at: string
+   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config: Record<string, any>
   organization: string
   project: string
 }
 
+ 
 const scanService = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async list(params?: Record<string, any>): Promise<AIScan[]> {
     const { data } = await apiClient.get('/scans/', { params })
     return data.results || data

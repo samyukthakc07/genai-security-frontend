@@ -1,307 +1,131 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Cpu, Bot, Network, Database,
   Shield, Activity, Clock, AlertCircle,
-  Bug, FileText, ChevronRight,
-  TrendingUp, AlertTriangle,
+  Bug, FileText, ChevronRight, CheckCircle2,
+  AlertTriangle,
 } from 'lucide-react'
-import { Badge, SeverityBadge, Button } from '@/components/ui'
+import { Badge, SeverityBadge, Button, Card, CardHeader, CardTitle, CardContent } from '@/components/ui'
 import { cn } from '@/utils/helpers'
-import assetService from '@/services/assetService'
+import { aiAssetsMockData } from '@/data/aiAssetsMockData'
 import { PageLoading } from '@/components/ui/LoadingSpinner'
 
-// ─── Types ───────────────────────────────────────────────
 type AssetType = 'models' | 'agents' | 'rag-systems' | 'vector-dbs'
 
-interface ScanSummary {
-  id: string
-  name: string
-  type: string
-  status: string
-  severity: string
-  findingsCount: number
-  date: string
-  duration: string
-}
-
-interface SecurityMetric {
-  category: string
-  score: number
-  maxScore: number
-  risk: string
-  label: string
-}
-
-interface AssetDetail {
-  id: string
-  name: string
-  type: AssetType
-  provider?: string
-  version?: string
-  status: string
-  risk: string
-  description: string
-  stats: { label: string; value: string; color: string }[]
-  overview: Record<string, string>
-  scans: ScanSummary[]
-  metrics: SecurityMetric[]
-  findingsCount: number
-  criticalFindings: { severity: string; title: string; category: string; id: string }[]
-}
-
-// ─── Helpers ─────────────────────────────────────────────
-
-/** Build a display AssetDetail from a live API response. */
-function buildLiveAsset(type: AssetType, apiData: any): AssetDetail {
-  const scans: ScanSummary[] = []
-  const metrics: SecurityMetric[] = []
-  const findingsCount = 0
-  const criticalFind: { severity: string; title: string; category: string; id: string }[] = []
-
-  switch (type) {
-    case 'models': {
-      const data = apiData as any
-      return {
-        id: data.id, name: data.name, type,
-        provider: data.model_type ? data.model_type.charAt(0).toUpperCase() + data.model_type.slice(1) : 'N/A',
-        version: data.version || 'N/A',
-        status: data.is_active ? 'active' : 'inactive',
-        risk: data.risk_score >= 85 ? 'critical' : data.risk_score >= 70 ? 'high' : data.risk_score >= 40 ? 'medium' : 'low',
-        description: data.capabilities?.join(', ') || 'AI Model',
-        stats: [
-          { label: 'Risk Score', value: String(data.risk_score || 0), color: data.risk_score >= 70 ? 'red' : data.risk_score >= 40 ? 'amber' : 'green' },
-          { label: 'Context Window', value: `${(data.context_window || 4096).toLocaleString()} tokens`, color: 'blue' },
-          { label: 'Status', value: data.is_active ? 'Active' : 'Inactive', color: data.is_active ? 'green' : 'gray' },
-          { label: 'Findings', value: String(findingsCount), color: findingsCount > 0 ? 'amber' : 'green' },
-        ],
-        overview: {
-          'Model Type': (data.model_type_display || data.model_type || 'N/A'),
-          'Model Family': data.model_family || 'N/A',
-          'Version': data.version || 'N/A',
-          'Context Window': `${(data.context_window || 4096).toLocaleString()} tokens`,
-          'Capabilities': (data.capabilities || []).join(', ') || 'N/A',
-          'Discovery': data.discovery_method || 'N/A',
-        },
-        scans, metrics, findingsCount,
-        criticalFindings: criticalFind,
-      }
-    }
-    case 'agents': {
-      const data = apiData as any
-      return {
-        id: data.id, name: data.name, type,
-        provider: data.model ? (typeof data.model === 'object' ? data.model.name : 'N/A') : 'N/A',
-        version: 'v1.0',
-        status: data.status || 'active',
-        risk: data.risk_level || 'medium',
-        description: data.description || 'AI Agent',
-        stats: [
-          { label: 'Risk Level', value: (data.risk_level || 'medium').charAt(0).toUpperCase() + (data.risk_level || 'medium').slice(1), color: data.risk_level === 'critical' ? 'red' : data.risk_level === 'high' ? 'amber' : 'green' },
-          { label: 'Tools', value: String((data.tools || []).length), color: 'blue' },
-          { label: 'Status', value: data.status || 'N/A', color: data.status === 'active' ? 'green' : data.status === 'idle' ? 'amber' : 'gray' },
-          { label: 'Findings', value: String(findingsCount), color: findingsCount > 0 ? 'amber' : 'green' },
-        ],
-        overview: {
-          'Agent Type': (data.agent_type_display || data.agent_type || 'N/A'),
-          'Tools': String((data.tools || []).length) + ' integrated',
-          'Permissions': data.human_approval_required ? 'Restricted' : 'Full',
-          'Human Approval': data.human_approval_required ? 'Required' : 'Not Required',
-          'Base Model': typeof data.model === 'object' ? data.model.name || 'N/A' : 'N/A',
-          'Description': data.description ? data.description.substring(0, 60) + (data.description.length > 60 ? '...' : '') : 'N/A',
-        },
-        scans, metrics, findingsCount,
-        criticalFindings: criticalFind,
-      }
-    }
-    case 'rag-systems': {
-      const data = apiData as any
-      return {
-        id: data.id, name: data.name, type,
-        provider: data.vector_db ? (typeof data.vector_db === 'object' ? data.vector_db.name : 'N/A') : 'N/A',
-        version: 'v1.0',
-        status: data.is_active ? 'active' : 'inactive',
-        risk: data.risk_score >= 85 ? 'critical' : data.risk_score >= 70 ? 'high' : data.risk_score >= 40 ? 'medium' : 'low',
-        description: `RAG System: ${data.name} using ${data.chunking_strategy} chunking strategy.`,
-        stats: [
-          { label: 'Risk Score', value: String(data.risk_score || 0), color: data.risk_score >= 70 ? 'red' : data.risk_score >= 40 ? 'amber' : 'green' },
-          { label: 'Chunk Size', value: `${data.chunk_size || 1000} tokens`, color: 'blue' },
-          { label: 'Status', value: data.is_active ? 'Active' : 'Inactive', color: data.is_active ? 'green' : 'gray' },
-          { label: 'Findings', value: String(findingsCount), color: findingsCount > 0 ? 'amber' : 'green' },
-        ],
-        overview: {
-          'Chunking Strategy': data.chunking_strategy || 'N/A',
-          'Chunk Size': `${data.chunk_size || 1000} tokens`,
-          'Chunk Overlap': `${data.chunk_overlap || 200} tokens`,
-          'Vector DB': typeof data.vector_db === 'object' ? data.vector_db.name : 'N/A',
-          'Embedding Model': typeof data.embedding_model === 'object' ? data.embedding_model.name : 'N/A',
-          'Status': data.is_active ? 'Active' : 'Inactive',
-        },
-        scans, metrics, findingsCount,
-        criticalFindings: criticalFind,
-      }
-    }
-    case 'vector-dbs': {
-      const data = apiData as any
-      return {
-        id: data.id, name: data.name, type,
-        provider: data.db_type_display || data.db_type || 'N/A',
-        version: data.indexing_method || 'N/A',
-        status: data.is_active ? 'active' : 'inactive',
-        risk: data.risk_score >= 85 ? 'critical' : data.risk_score >= 70 ? 'high' : data.risk_score >= 40 ? 'medium' : 'low',
-        description: `${data.db_type_display || data.db_type} database: ${data.name}. Used in ${data.tenant_id || 'default'} environment.`,
-        stats: [
-          { label: 'Risk Score', value: String(data.risk_score || 0), color: data.risk_score >= 70 ? 'red' : data.risk_score >= 40 ? 'amber' : 'green' },
-          { label: 'Dimension', value: String(data.dimension || 0), color: 'blue' },
-          { label: 'Status', value: data.is_active ? 'Active' : 'Inactive', color: data.is_active ? 'green' : 'gray' },
-          { label: 'Findings', value: String(findingsCount), color: findingsCount > 0 ? 'amber' : 'green' },
-        ],
-        overview: {
-          'DB Type': data.db_type_display || data.db_type || 'N/A',
-          'Environment': data.tenant_id || 'N/A',
-          'Dimension': String(data.dimension || 0),
-          'Indexing Method': data.indexing_method || 'N/A',
-          'Status': data.is_active ? 'Active' : 'Inactive',
-          'Last Assessed': data.last_assessed_at ? new Date(data.last_assessed_at).toLocaleDateString() : 'Never',
-        },
-        scans, metrics, findingsCount,
-        criticalFindings: criticalFind,
-      }
-    }
-  }
-}
-
-/** Fetch an asset from the live API based on type. */
-async function fetchLiveAsset(type: AssetType, id: string): Promise<any> {
-  switch (type) {
-    case 'models': return assetService.getModel(id)
-    case 'agents': return assetService.getAgent(id)
-    case 'rag-systems': return assetService.getRAGSystem(id)
-    case 'vector-dbs': return assetService.getVectorDatabase(id)
-  }
-}
-
-// ─── Component ───────────────────────────────────────────
 export function AssetDetailPage() {
   const { type, id } = useParams<{ type: AssetType; id: string }>()
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState<'overview' | 'scans' | 'metrics'>('overview')
-  const [liveAsset, setLiveAsset] = useState<AssetDetail | null>(null)
+  const [activeTab, setActiveTab] = useState<'overview' | 'security' | 'findings' | 'history'>('overview')
+  const [asset, setAsset] = useState<any | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [fetchError, setFetchError] = useState(false)
-
-  const baseRoute = `/ai-assets/${type || 'models'}`
 
   useEffect(() => {
-    if (!type || !id) {
-      setIsLoading(false)
-      setFetchError(true)
-      return
-    }
+    // Simulate slight network delay
     setIsLoading(true)
-    setFetchError(false)
-    fetchLiveAsset(type, id)
-      .then((data) => {
-        setLiveAsset(buildLiveAsset(type, data))
-        setFetchError(false)
-      })
-      .catch(() => {
-        setFetchError(true)
-      })
-      .finally(() => setIsLoading(false))
+    const timer = setTimeout(() => {
+      let collection: any[] = []
+      if (type === 'agents') collection = aiAssetsMockData.agents
+      else if (type === 'models') collection = aiAssetsMockData.models
+      else if (type === 'rag-systems') collection = aiAssetsMockData['rag-systems']
+      else if (type === 'vector-dbs') collection = aiAssetsMockData['vector-dbs']
+      
+      const found = collection.find(a => a.id === id)
+      setAsset(found || null)
+      setIsLoading(false)
+    }, 200)
+
+    return () => clearTimeout(timer)
   }, [type, id])
 
-  const asset = liveAsset
+  if (isLoading) return <PageLoading />
 
-  if (isLoading) {
-    return <PageLoading />
-  }
-
-  if (!asset || fetchError) {
+  if (!asset) {
     return (
-      <div className="space-y-6">
-        <button onClick={() => navigate(baseRoute)} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700">
-          <ArrowLeft className="h-4 w-4" /> Back to AI Assets
-        </button>
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <AlertCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-gray-900">Asset not found</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            The {type?.replace(/-/g, ' ') || 'AI'} asset wasn't found in the database.
-          </p>
-          <Button className="mt-4" onClick={() => navigate(baseRoute)}>View All Assets</Button>
-        </div>
+      <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-gray-200 mt-8">
+        <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Agent Not Found</h2>
+        <p className="text-gray-500 mb-6">The requested AI asset could not be found or has been removed.</p>
+        <Button onClick={() => navigate('/ai-assets')}>Back to AI Assets</Button>
       </div>
     )
   }
 
-  const typeLabel = type === 'models' ? 'Model' : type === 'agents' ? 'Agent' : type === 'rag-systems' ? 'RAG System' : 'Vector DB'
-  const typeIcon = type === 'models' ? <Cpu className="h-5 w-5" /> : type === 'agents' ? <Bot className="h-5 w-5" /> : type === 'rag-systems' ? <Network className="h-5 w-5" /> : <Database className="h-5 w-5" />
-  const iconBg = type === 'models' ? 'bg-blue-50 text-blue-600' : type === 'agents' ? 'bg-cyan-50 text-cyan-600' : type === 'rag-systems' ? 'bg-purple-50 text-purple-600' : 'bg-teal-50 text-teal-600'
+  const getTypeIcon = () => {
+    switch (type) {
+      case 'models': return <Cpu className="h-5 w-5 text-purple-600" />
+      case 'agents': return <Bot className="h-5 w-5 text-blue-600" />
+      case 'rag-systems': return <Network className="h-5 w-5 text-emerald-600" />
+      case 'vector-dbs': return <Database className="h-5 w-5 text-orange-600" />
+      default: return <Cpu className="h-5 w-5 text-gray-600" />
+    }
+  }
+
+  const getTypeBg = () => {
+    switch (type) {
+      case 'models': return 'bg-purple-100'
+      case 'agents': return 'bg-blue-100'
+      case 'rag-systems': return 'bg-emerald-100'
+      case 'vector-dbs': return 'bg-orange-100'
+      default: return 'bg-gray-100'
+    }
+  }
 
   return (
-    <div className="space-y-6">
-      {/* ===== Header ===== */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate(baseRoute)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 text-gray-500" />
-          </button>
-          <div className="flex items-center gap-3">
-            <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${iconBg}`}>
-              {typeIcon}
-            </div>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-gray-900">{asset.name}</h1>
-                <Badge variant={asset.status === 'active' ? 'success' : asset.status === 'idle' ? 'warning' : 'default'}>{asset.status}</Badge>
-                <span className="text-xs text-gray-400 uppercase tracking-wide">{typeLabel}</span>
-              </div>
-              <p className="text-sm text-gray-500 mt-1">
-                {asset.provider} {asset.version ? `· v${asset.version}` : ''}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => navigate(`/scans/new?target=${type}:${id}`)}>
-            <Shield className="h-4 w-4" /> Run Scan
+    <div className="space-y-6 pb-12">
+      {/* ─── Header ─── */}
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div className="flex items-start gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/ai-assets')} className="mt-1">
+            <ArrowLeft className="h-4 w-4" />
           </Button>
+          <div className={`p-3 rounded-xl flex-shrink-0 ${getTypeBg()}`}>
+            {getTypeIcon()}
+          </div>
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-2xl font-bold text-gray-900">{asset.name}</h1>
+              <Badge variant={asset.environment === 'Production' ? 'success' : 'warning'}>{asset.environment}</Badge>
+              <Badge variant={asset.status === 'Active' ? 'success' : 'default'}>{asset.status}</Badge>
+            </div>
+            <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
+              <span className="font-medium text-gray-700">{asset.type}</span>
+              <span>•</span>
+              <span>ID: {asset.id}</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 shrink-0">
+          <div className="text-right mr-4">
+            <div className="text-xs text-gray-500 uppercase font-semibold tracking-wider">Risk Score</div>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-2xl font-bold text-gray-900">{asset.riskScore}<span className="text-sm text-gray-400 font-normal">/100</span></span>
+              <SeverityBadge severity={asset.riskLevel.toLowerCase()} />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate('/findings')}>View Findings</Button>
+            <Button variant="outline" onClick={() => navigate('/scans')}>View Assessments</Button>
+            <Button>Edit Asset</Button>
+          </div>
         </div>
       </div>
 
-      {/* ===== Stats Row ===== */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {asset.stats.map((s) => (
-          <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-4">
-            <p className="text-xs text-gray-500 mb-1">{s.label}</p>
-            <p className={cn(
-              'text-xl font-bold',
-              s.color === 'green' ? 'text-green-600' :
-              s.color === 'amber' ? 'text-amber-600' :
-              s.color === 'red' ? 'text-red-600' : 'text-blue-600'
-            )}>{s.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* ===== Tabs ===== */}
-      <div className="bg-white rounded-xl border border-gray-200">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        {/* ─── Tabs ─── */}
         <div className="border-b border-gray-200">
-          <div className="flex">
+          <div className="flex overflow-x-auto">
             {[
-              { id: 'overview' as const, label: 'Overview', icon: <FileText className="h-4 w-4" /> },
-              { id: 'scans' as const, label: 'Scan History', icon: <Shield className="h-4 w-4" />, badge: asset.scans.length },
-              { id: 'metrics' as const, label: 'Security Metrics', icon: <TrendingUp className="h-4 w-4" /> },
+              { id: 'overview', label: 'Overview', icon: <FileText className="h-4 w-4" /> },
+              { id: 'security', label: 'Security Posture', icon: <Shield className="h-4 w-4" /> },
+              { id: 'findings', label: 'Findings', icon: <Bug className="h-4 w-4" />, badge: asset.findings.length },
+              { id: 'history', label: 'Activity & History', icon: <Activity className="h-4 w-4" /> }
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => setActiveTab(tab.id as any)}
                 className={cn(
-                  'flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors',
+                  'flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap',
                   activeTab === tab.id
                     ? 'border-indigo-600 text-indigo-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -320,257 +144,273 @@ export function AssetDetailPage() {
           </div>
         </div>
 
-        <div className="p-5">
-          {/* ── Overview Tab ── */}
+        <div className="p-6">
+          {/* ─── Overview Tab ─── */}
           {activeTab === 'overview' && (
-            <div className="space-y-6">
+            <div className="space-y-8">
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-2">Description</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">{asset.description}</p>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-2">Details</h3>
-                <div className="bg-gray-50 rounded-lg p-4 grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {Object.entries(asset.overview).map(([key, value]) => (
-                    <div key={key}>
-                      <p className="text-[11px] text-gray-500 uppercase tracking-wider">{key}</p>
-                      <p className="text-sm font-medium text-gray-900 mt-0.5">{value}</p>
-                    </div>
-                  ))}
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Asset Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-gray-500">Asset Name</span>
+                    <p className="text-sm font-medium text-gray-900">{asset.name}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-gray-500">Description</span>
+                    <p className="text-sm font-medium text-gray-900">{asset.description}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-gray-500">Base Model</span>
+                    <p className="text-sm font-medium text-gray-900">{asset.model}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-gray-500">Provider</span>
+                    <p className="text-sm font-medium text-gray-900">{asset.provider}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-gray-500">Environment</span>
+                    <p className="text-sm font-medium text-gray-900">{asset.environment}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-gray-500">Owner</span>
+                    <p className="text-sm font-medium text-gray-900">{asset.owner}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-gray-500">Business Function</span>
+                    <p className="text-sm font-medium text-gray-900">{asset.businessFunction}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-gray-500">Status</span>
+                    <p className="text-sm font-medium text-gray-900">{asset.status}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-gray-500">Created Date</span>
+                    <p className="text-sm font-medium text-gray-900">{asset.createdDate}</p>
+                  </div>
                 </div>
               </div>
 
-              {asset.criticalFindings.length > 0 && (
+              {type === 'agents' && (
                 <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <AlertTriangle className="h-4 w-4 text-red-500" />
-                    <h3 className="text-sm font-semibold text-gray-900">Critical & High Findings ({asset.criticalFindings.length})</h3>
-                  </div>
-                  <div className="space-y-2">
-                    {asset.criticalFindings.map((f) => (
-                      <div key={f.id} className="flex items-start gap-3 p-3 rounded-lg border border-red-100 bg-red-50/30">
-                        <SeverityBadge severity={f.severity} className="shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{f.title}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">{f.category}</p>
-                        </div>
-                      </div>
-                    ))}
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Agent Capabilities & Integrations</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="shadow-sm">
+                      <CardHeader className="pb-3 border-b border-gray-100">
+                        <CardTitle className="text-sm font-semibold">Capabilities</CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-4">
+                        <ul className="space-y-2">
+                          {asset.capabilities?.map((cap: string, i: number) => (
+                            <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
+                              <CheckCircle2 className="h-4 w-4 text-green-500" /> {cap}
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                    <Card className="shadow-sm">
+                      <CardHeader className="pb-3 border-b border-gray-100">
+                        <CardTitle className="text-sm font-semibold">Tools / Integrations</CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-4 flex flex-wrap gap-2">
+                        {asset.integrations?.map((int: string, i: number) => (
+                          <Badge key={i} variant="default" className="bg-gray-50 text-gray-700">{int}</Badge>
+                        ))}
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
               )}
 
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-2">Risk Assessment</h3>
-                <div className="flex items-center gap-3 p-4 rounded-lg border border-gray-100">
-                  <div className={cn(
-                    'h-10 w-10 rounded-full flex items-center justify-center',
-                    asset.risk === 'critical' ? 'bg-red-100' :
-                    asset.risk === 'high' ? 'bg-orange-100' :
-                    asset.risk === 'medium' ? 'bg-amber-100' : 'bg-green-100'
-                  )}>
-                    <AlertCircle className={cn(
-                      'h-5 w-5',
-                      asset.risk === 'critical' ? 'text-red-600' :
-                      asset.risk === 'high' ? 'text-orange-600' :
-                      asset.risk === 'medium' ? 'text-amber-600' : 'text-green-600'
-                    )} />
+              {type === 'agents' && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Agent Permissions</h3>
+                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="px-4 py-3 font-semibold text-gray-900">Permission Scope</th>
+                          <th className="px-4 py-3 font-semibold text-gray-900">Risk Assessment</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {asset.permissions?.map((perm: any, i: number) => (
+                          <tr key={i}>
+                            <td className="px-4 py-3 text-gray-900">{perm.name}</td>
+                            <td className="px-4 py-3">
+                              <SeverityBadge severity={perm.risk.toLowerCase()} />
+                            </td>
+                          </tr>
+                        ))}
+                        {(!asset.permissions || asset.permissions.length === 0) && (
+                          <tr><td colSpan={2} className="px-4 py-4 text-center text-gray-500">No specific permissions configured.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      Overall Risk: <span className={cn(
-                        'capitalize',
-                        asset.risk === 'critical' ? 'text-red-600' :
-                        asset.risk === 'high' ? 'text-orange-600' :
-                        asset.risk === 'medium' ? 'text-amber-600' : 'text-green-600'
-                      )}>{asset.risk}</span>
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {asset.findingsCount} total findings across {asset.scans.length} security scans
-                    </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ─── Security Posture Tab ─── */}
+          {activeTab === 'security' && (
+            <div className="space-y-8">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                  <p className="text-xs text-gray-500 font-medium mb-1">Overall Risk Score</p>
+                  <p className="text-2xl font-bold text-gray-900">{asset.riskScore}<span className="text-sm text-gray-400">/100</span></p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                  <p className="text-xs text-gray-500 font-medium mb-1">Risk Level</p>
+                  <SeverityBadge severity={asset.riskLevel.toLowerCase()} className="mt-1" />
+                </div>
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                  <p className="text-xs text-gray-500 font-medium mb-1">Open Findings</p>
+                  <p className="text-2xl font-bold text-gray-900">{asset.findings?.length || 0}</p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                  <p className="text-xs text-gray-500 font-medium mb-1">OWASP Coverage</p>
+                  <p className="text-2xl font-bold text-gray-900">{asset.owaspExposure?.length || 0}<span className="text-sm text-gray-400">/10</span></p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                  <p className="text-xs text-gray-500 font-medium mb-1">Last Assessment</p>
+                  <p className="text-sm font-bold text-gray-900 mt-2">{asset.lastAssessment}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">OWASP LLM Risk Exposure</h3>
+                  <div className="space-y-3">
+                    {asset.owaspExposure?.length > 0 ? asset.owaspExposure.map((exp: any) => (
+                      <div key={exp.id} className="p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-bold text-gray-900">{exp.number} {exp.name}</span>
+                          <SeverityBadge severity={exp.risk.toLowerCase()} />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500">Risk Score:</span>
+                            <span className="text-xs font-bold text-gray-900">{exp.score}</span>
+                          </div>
+                          <span className="text-xs font-medium text-indigo-600">{exp.findings} findings</span>
+                        </div>
+                      </div>
+                    )) : (
+                      <div className="text-sm text-gray-500 border border-dashed rounded-lg p-6 text-center">No identified OWASP LLM exposures.</div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Security Controls</h3>
+                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="px-4 py-3 font-semibold text-gray-900">Control</th>
+                          <th className="px-4 py-3 font-semibold text-gray-900">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {asset.securityControls?.map((ctrl: any, i: number) => (
+                          <tr key={i}>
+                            <td className="px-4 py-3 text-gray-900">{ctrl.name}</td>
+                            <td className="px-4 py-3">
+                              <Badge variant={ctrl.status === 'Enabled' ? 'success' : ctrl.status.includes('Improvement') ? 'danger' : 'warning'}>
+                                {ctrl.status}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))}
+                        {(!asset.securityControls || asset.securityControls.length === 0) && (
+                          <tr><td colSpan={2} className="px-4 py-4 text-center text-gray-500">No security controls evaluated.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* ── Scan History Tab ── */}
-          {activeTab === 'scans' && (
-            <div className="space-y-3">
-              {asset.scans.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <Shield className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-                  <p className="font-medium text-gray-900">No scans yet</p>
-                  <p className="text-sm mt-1">This asset hasn't been scanned yet.</p>
-                  <Button className="mt-4" onClick={() => navigate(`/scans/new?target=${type}:${id}`)}>
-                    <Shield className="h-4 w-4" /> Run First Scan
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm text-gray-500">
-                      <span className="font-medium text-gray-900">{asset.scans.length}</span> scans · Latest:{' '}
-                      {[...asset.scans].sort((a, b) => b.date.localeCompare(a.date))[0]?.date}
-                    </p>
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/scans/new?target=${type}:${id}`)}>
-                      <Shield className="h-4 w-4" /> New Scan
-                    </Button>
-                  </div>
-                  {asset.scans.map((scan) => (
-                    <div
-                      key={scan.id}
-                      className="flex items-center justify-between p-4 rounded-lg border border-gray-100 hover:bg-gray-50 hover:border-indigo-100 transition-all cursor-pointer"
-                      onClick={() => navigate(`/scans/${scan.id}`)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          'h-9 w-9 rounded-lg flex items-center justify-center',
-                          scan.severity === 'critical' ? 'bg-red-50 text-red-600' :
-                          scan.severity === 'high' ? 'bg-orange-50 text-orange-600' :
-                          scan.severity === 'medium' ? 'bg-amber-50 text-amber-600' :
-                          'bg-gray-50 text-gray-500'
-                        )}>
-                          {scan.status === 'running' ? <Activity className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{scan.name}</p>
-                          <p className="text-xs text-gray-500">{scan.type} · {scan.date}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-gray-400">{scan.duration}</span>
-                        <span className="text-xs font-medium text-gray-500">{scan.findingsCount} findings</span>
-                        <Badge variant={
-                          scan.status === 'completed' ? 'success' :
-                          scan.status === 'running' ? 'info' :
-                          scan.status === 'failed' ? 'danger' : 'default'
-                        }>{scan.status}</Badge>
-                        <ChevronRight className="h-4 w-4 text-gray-300" />
-                      </div>
+          {/* ─── Findings Tab ─── */}
+          {activeTab === 'findings' && (
+            <div className="space-y-4">
+              {asset.findings?.length > 0 ? asset.findings.map((finding: any) => (
+                <div key={finding.id} className="p-4 rounded-xl border border-gray-200 hover:border-indigo-200 hover:shadow-sm transition-all cursor-pointer" onClick={() => navigate('/findings')}>
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <SeverityBadge severity={finding.severity.toLowerCase()} />
+                      <h4 className="text-sm font-bold text-gray-900">{finding.title}</h4>
                     </div>
-                  ))}
-                </>
+                    <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">{finding.id}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-4 text-xs mb-4 pb-3 border-b border-gray-100">
+                    <span className="text-gray-600">Category: <span className="font-medium text-gray-900">{finding.category}</span></span>
+                    <span className="text-gray-600">Score: <span className="font-bold text-gray-900">{finding.score}</span></span>
+                    <span className="text-gray-600">Status: <Badge variant={finding.status === 'Open' ? 'danger' : 'warning'} className="text-[10px] uppercase">{finding.status}</Badge></span>
+                  </div>
+                  
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs font-semibold text-gray-900 mb-1">Description</p>
+                      <p className="text-xs text-gray-600 leading-relaxed">{finding.description}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-900 mb-1">Recommendation</p>
+                      <p className="text-xs text-gray-600 leading-relaxed">{finding.recommendation}</p>
+                    </div>
+                  </div>
+                </div>
+              )) : (
+                <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                  <Shield className="h-10 w-10 text-green-500 mx-auto mb-3" />
+                  <h3 className="text-sm font-bold text-gray-900">No Open Findings</h3>
+                  <p className="text-sm text-gray-500 mt-1">This asset has a clean security posture.</p>
+                </div>
               )}
             </div>
           )}
 
-          {/* ── Security Metrics Tab ── */}
-          {activeTab === 'metrics' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {[
-                  { label: 'Overall', value: asset.stats[0]?.value || '—', color: asset.stats[0]?.color || 'gray' },
-                  { label: 'OWASP Coverage', value: asset.metrics.length > 5 ? '6/10' : `${asset.metrics.length}/10`, color: 'blue' },
-                  { label: 'Avg Risk Score', value: `${Math.round(asset.metrics.reduce((a, m) => a + m.score, 0) / asset.metrics.length)}%`, color: 'amber' },
-                  { label: 'Critical Findings', value: String(asset.criticalFindings.length), color: asset.criticalFindings.length > 0 ? 'red' : 'green' },
-                ].map((s) => (
-                  <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-4">
-                    <p className="text-xs text-gray-500 mb-1">{s.label}</p>
-                    <p className={cn(
-                      'text-xl font-bold',
-                      s.color === 'green' ? 'text-green-600' :
-                      s.color === 'amber' ? 'text-amber-600' :
-                      s.color === 'red' ? 'text-red-600' : 'text-blue-600'
-                    )}>{s.value}</p>
-                  </div>
-                ))}
-              </div>
-
+          {/* ─── History Tab ─── */}
+          {activeTab === 'history' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">OWASP LLM Security Scores</h3>
-                <div className="space-y-3">
-                  {asset.metrics.map((metric) => (
-                    <div key={metric.category} className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-700">{metric.category}</span>
-                          <span className={cn(
-                            'text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded',
-                            metric.risk === 'critical' ? 'bg-red-50 text-red-600' :
-                            metric.risk === 'high' ? 'bg-orange-50 text-orange-600' :
-                            metric.risk === 'medium' ? 'bg-amber-50 text-amber-600' :
-                            'bg-green-50 text-green-600'
-                          )}>{metric.risk}</span>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Assessments</h3>
+                <div className="space-y-4">
+                  {asset.assessments?.length > 0 ? asset.assessments.map((asm: any) => (
+                    <div key={asm.id} className="p-4 rounded-xl border border-gray-100 flex justify-between items-center bg-white shadow-sm hover:border-indigo-200 cursor-pointer transition-all" onClick={() => navigate('/scans')}>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-bold text-gray-900">{asm.type}</span>
+                          <Badge variant="success" className="text-[10px]">{asm.status}</Badge>
                         </div>
-                        <span className="text-sm font-bold text-gray-900">{metric.label}</span>
+                        <div className="text-xs text-gray-500">
+                          {asm.date} • {asm.tests} tests • <span className="font-medium text-indigo-600">{asm.findings} findings</span>
+                        </div>
                       </div>
-                      <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className={cn(
-                            'h-full rounded-full transition-all duration-500',
-                            metric.score >= 80 ? 'bg-green-500' :
-                            metric.score >= 60 ? 'bg-amber-400' :
-                            metric.score >= 40 ? 'bg-orange-500' : 'bg-red-500'
-                          )}
-                          style={{ width: `${metric.score}%` }}
-                        />
-                      </div>
+                      <SeverityBadge severity={asm.risk.toLowerCase()} />
                     </div>
-                  ))}
+                  )) : (
+                    <p className="text-sm text-gray-500 italic border p-6 rounded-lg bg-gray-50 text-center border-dashed">No recent assessments.</p>
+                  )}
                 </div>
               </div>
-
+              
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Risk Distribution</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {['critical', 'high', 'medium', 'low'].map((level) => {
-                    const count = asset.metrics.filter((m) => m.risk === level).length
-                    const colorMap: Record<string, string> = {
-                      critical: 'bg-red-100 border-red-200 text-red-700',
-                      high: 'bg-orange-100 border-orange-200 text-orange-700',
-                      medium: 'bg-amber-100 border-amber-200 text-amber-700',
-                      low: 'bg-green-100 border-green-200 text-green-700',
-                    }
-                    return (
-                      <div key={level} className={`rounded-lg border p-3 ${colorMap[level]}`}>
-                        <p className="text-2xl font-bold capitalize">{count}</p>
-                        <p className="text-xs mt-0.5 capitalize">{level} categories</p>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Scan Activity</h3>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">
-                        <strong className="text-gray-900">{asset.scans.length}</strong> total scans
-                      </span>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Activity Timeline</h3>
+                <div className="relative border-l-2 border-gray-100 ml-3 space-y-6">
+                  {asset.activity?.length > 0 ? asset.activity.map((act: any, i: number) => (
+                    <div key={act.id || i} className="relative pl-6">
+                      <div className="absolute -left-[5px] top-1.5 h-2 w-2 rounded-full bg-indigo-500 border-[3px] border-white box-content shadow-sm" />
+                      <p className="text-sm text-gray-900 leading-snug">{act.text}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{new Date(act.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Activity className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">
-                        <strong className="text-gray-900">{asset.scans.filter((s) => s.status === 'completed').length}</strong> completed
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Bug className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">
-                        <strong className="text-gray-900">{asset.findingsCount}</strong> total findings
-                      </span>
-                    </div>
-                  </div>
-                  {asset.scans.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      {asset.scans.slice(0, 4).map((scan) => (
-                        <div key={scan.id} className="flex items-center gap-3 text-xs">
-                          <div className={cn(
-                            'h-2 w-2 rounded-full',
-                            scan.status === 'completed' ? 'bg-green-400' :
-                            scan.status === 'running' ? 'bg-blue-400 animate-pulse' :
-                            scan.status === 'failed' ? 'bg-red-400' : 'bg-gray-300'
-                          )} />
-                          <span className="text-gray-500">{scan.date}</span>
-                          <span className="text-gray-700">{scan.name}</span>
-                        </div>
-                      ))}
-                    </div>
+                  )) : (
+                    <p className="text-sm text-gray-500 italic pl-4">No recent activity.</p>
                   )}
                 </div>
               </div>
