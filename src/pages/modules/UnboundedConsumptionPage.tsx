@@ -63,9 +63,9 @@ export function UnboundedConsumptionPage() {
     }},
   ]
 
-  const totalDailyCost = 0
-  const totalTodayTokens = 0
-  const monthlyCost = 0
+  const totalDailyCost = tokenUsage.reduce((acc: number, curr: any) => acc + (typeof curr.cost === 'number' ? curr.cost : Number(curr.cost) || 0), 0)
+  const totalTodayTokens = tokenUsage.reduce((acc: number, curr: any) => acc + (typeof curr.tokens_used === 'number' ? curr.tokens_used : Number(curr.tokens_used) || 0), 0)
+  const monthlyCost = totalDailyCost * 30
 
   return (
     <div className="space-y-6">

@@ -44,7 +44,7 @@ apiClient.interceptors.response.use(
     const data = response.data?.results || response.data
     if (Array.isArray(data) && data.length === 0 && response.config.url) {
       const mock = getMockDataForUrl(response.config.url)
-      if (mock && mock.length > 0) {
+      if (mock && (!Array.isArray(mock) || mock.length > 0)) {
         if (response.data?.results) {
           response.data.results = mock
         } else {
@@ -82,6 +82,22 @@ apiClient.interceptors.response.use(
         localStorage.removeItem('access_token')
         localStorage.removeItem('refresh_token')
         // window.location.href = '/login'
+      }
+    }
+
+    // DEMO OVERRIDE: If API completely fails (e.g., connection refused or 500)
+    // fallback to our local mock data so the demo can still function.
+    if (originalRequest?.url) {
+      const mock = getMockDataForUrl(originalRequest.url)
+      if (mock && (!Array.isArray(mock) || mock.length > 0) && (Array.isArray(mock) || Object.keys(mock).length > 0)) {
+        console.warn(`[API] Fallback to demo data for failed request: ${originalRequest.url}`)
+        return Promise.resolve({
+          data: mock,
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: originalRequest
+        })
       }
     }
 
