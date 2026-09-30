@@ -1,6 +1,7 @@
 import axios from 'axios'
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { API_BASE_URL } from '@/utils/constants'
+import { getMockDataForUrl } from '@/data/demoMockData'
 
 const DEFAULT_TIMEOUT_MS = 15000 // 15s default for all normal requests
 
@@ -31,12 +32,27 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
+
 // Response interceptor - handle token refresh
 apiClient.interceptors.response.use(
   (response) => {
     // @ts-expect-error ignoring this for now ignore this for now
     const duration = new Date() - response.config.metadata.startTime
     console.log(`[API] ${response.config.method?.toUpperCase()} ${response.config.url} - ${duration}ms`)
+    
+    // DEMO OVERRIDE: If the API returns an empty array, inject our rich demo mock data globally
+    const data = response.data?.results || response.data
+    if (Array.isArray(data) && data.length === 0 && response.config.url) {
+      const mock = getMockDataForUrl(response.config.url)
+      if (mock && mock.length > 0) {
+        if (response.data?.results) {
+          response.data.results = mock
+        } else {
+          response.data = mock
+        }
+      }
+    }
+    
     return response
   },
   async (error: AxiosError) => {
